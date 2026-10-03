@@ -360,6 +360,18 @@ class RepositoryGeneric[Schema: MealieModel, Model: SqlAlchemyBase]:
             items=[eff_schema.model_validate(s) for s in data],
         )
 
+    def add_query_filter_to_query(self, query: Select, query_filter: str | None) -> Select:
+        if query_filter:
+            try:
+                query_filter_builder = QueryFilterBuilder(query_filter)
+                query = query_filter_builder.filter_query(query, model=self.model, column_aliases=self.column_aliases)
+
+            except ValueError as e:
+                self.logger.error(e)
+                raise HTTPException(status_code=400, detail=str(e)) from e
+
+        return query
+
     def add_pagination_to_query(self, query: Select, pagination: PaginationQuery) -> tuple[Select, int, int]:
         """
         Adds pagination data to an existing query.
@@ -369,15 +381,7 @@ class RepositoryGeneric[Schema: MealieModel, Model: SqlAlchemyBase]:
             - count - total number of records (without pagination)
             - total_pages - the total number of pages in the query
         """
-
-        if pagination.query_filter:
-            try:
-                query_filter_builder = QueryFilterBuilder(pagination.query_filter)
-                query = query_filter_builder.filter_query(query, model=self.model, column_aliases=self.column_aliases)
-
-            except ValueError as e:
-                self.logger.error(e)
-                raise HTTPException(status_code=400, detail=str(e)) from e
+        query = self.add_query_filter_to_query(query, pagination.query_filter)
 
         count_query = select(func.count()).select_from(query.order_by(None).distinct().subquery())
         count = self.session.scalar(count_query)

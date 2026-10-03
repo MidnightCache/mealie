@@ -17,7 +17,7 @@ export interface UseRecipeSearchReturn {
  * on the query. Useful for searchable list views. For advanced
  * search, use the `useRecipeQuery` composable.
  */
-export function useRecipeSearch(api: UserApi | ExploreApi): UseRecipeSearchReturn {
+export function useRecipeSearch(api: UserApi | ExploreApi, groupVariants = false): UseRecipeSearchReturn {
   const query = ref("");
   const error = ref("");
   const loading = ref(false);
@@ -27,6 +27,7 @@ export function useRecipeSearch(api: UserApi | ExploreApi): UseRecipeSearchRetur
     loading.value = true;
     const { data, error } = await api.recipes.search({
       search: term,
+      groupVariants,
       page: 1,
       orderBy: "name",
       orderDirection: "asc",

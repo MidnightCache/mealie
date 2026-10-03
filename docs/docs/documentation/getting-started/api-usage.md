@@ -25,6 +25,8 @@ Create a linked version through the duplicate endpoint with `asVariant` enabled 
 
 Send this body to `POST /api/recipes/{slug}/duplicate`. The response is a complete, independently editable recipe linked to the same variant group.
 
+Recipe list endpoints accept `groupVariants=true` to return one matching recipe per dish. Search, filters, and access permissions are applied before grouping, and pagination totals count dishes. The original recipe is preferred when it matches; otherwise a matching version is returned. The default is `false`, so integrations and selectors can continue to retrieve every individual version.
+
 ### Extras
 #### Recipe Extras
 Recipes extras are a key feature of the Mealie API. They allow you to create custom json key/value pairs within a recipe to reference from 3rd part applications. You can use these keys to contain information to trigger automation or custom messages to relay to your desired device.

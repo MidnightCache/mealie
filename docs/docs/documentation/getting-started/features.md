@@ -46,6 +46,8 @@ A recipe can have linked versions for different cooking methods, such as an oven
 
 Each version is a complete recipe, so its cooking time, temperature, ingredients, and instructions can be adjusted without changing the other versions. Mealie also imports and exports the Schema.org `cookingMethod` property.
 
+Recipe lists, cookbooks, favorites, and navigation search show a dish once, even when it has several cooking methods. Search and filters still find matching methods. Meal planning and recipe ingredient references let you select a specific version.
+
 
 ### Organizing Recipes
 

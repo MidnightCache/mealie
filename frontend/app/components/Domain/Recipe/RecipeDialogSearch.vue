@@ -194,7 +194,7 @@ function close() {
 // Basic Search
 const { isOwnGroup } = useLoggedInState();
 const api = isOwnGroup.value ? useUserApi() : usePublicExploreApi(groupSlug.value).explore;
-const search = useRecipeSearch(api);
+const search = useRecipeSearch(api, !attrs.selected);
 
 watch(() => search.data.value, () => {
   selectedIndex.value = -1;

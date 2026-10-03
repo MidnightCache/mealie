@@ -306,6 +306,7 @@ class RepositoryRecipes(RecipeSuggestionMixin, HouseholdRepositoryGeneric[Recipe
         require_all_tools=True,
         require_all_foods=True,
         search: str | None = None,
+        group_variants: bool = False,
     ) -> RecipePagination:
         # Copy this, because calling methods (e.g. tests) might rely on it not getting mutated
         pagination_result = pagination.model_copy()
@@ -342,7 +343,16 @@ class RepositoryRecipes(RecipeSuggestionMixin, HouseholdRepositoryGeneric[Recipe
             # default ordering if not searching
             pagination_result.order_by = "created_at"
 
+        if group_variants:
+            # Public visibility, cookbook and favorite filters must apply before choosing
+            # a representative, so an ineligible original cannot hide a matching variant.
+            q = self.add_query_filter_to_query(q, pagination_result.query_filter)
+            pagination_result.query_filter = None
+            q = self._group_cooking_method_variants(q)
+
         q, count, total_pages = self.add_pagination_to_query(q, pagination_result)
+        if group_variants:
+            q = q.order_by(self.model.id)
 
         # Apply options late, so they do not get used for counting
         q = q.options(*RecipeSummary.loader_options())
@@ -362,6 +372,36 @@ class RepositoryRecipes(RecipeSuggestionMixin, HouseholdRepositoryGeneric[Recipe
             total_pages=total_pages,
             items=items,
         )
+
+    def _group_cooking_method_variants(self, query: sa.Select) -> sa.Select:
+        """Keep one eligible recipe per dish, before counting and paginating results."""
+        eligible = (
+            query.with_only_columns(
+                self.model.id,
+                self.model.group_id,
+                self.model.created_at,
+                sa.func.coalesce(self.model.variant_group_id, self.model.id).label("variant_group"),
+            )
+            .order_by(None)
+            .distinct()
+            .subquery()
+        )
+        ranked = sa.select(
+            eligible.c.id,
+            sa.func.row_number()
+            .over(
+                partition_by=(eligible.c.group_id, eligible.c.variant_group),
+                order_by=(
+                    sa.case((eligible.c.id == eligible.c.variant_group, 0), else_=1),
+                    eligible.c.created_at.asc().nulls_first(),
+                    eligible.c.id,
+                ),
+            )
+            .label("variant_rank"),
+        ).subquery()
+        # Prefer the original when it matches. If it is filtered out or deleted,
+        # use the oldest matching variant with its own slug and method intact.
+        return query.where(self.model.id.in_(sa.select(ranked.c.id).where(ranked.c.variant_rank == 1)))
 
     @staticmethod
     def _ingredient_uses_food(food: UUID4) -> sa.ColumnElement:

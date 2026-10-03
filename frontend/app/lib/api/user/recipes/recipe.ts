@@ -66,6 +66,7 @@ const routes = {
 
 export type RecipeSearchQuery = {
   search?: string;
+  groupVariants?: boolean;
   orderDirection?: "asc" | "desc";
   groupId?: string;
 

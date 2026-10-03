@@ -21,6 +21,7 @@ class OrderByNullPosition(enum.StrEnum):
 
 class RecipeSearchQuery(MealieModel):
     cookbook: UUID4 | str | None = None
+    group_variants: bool = False
     require_all_categories: bool = False
     require_all_tags: bool = False
     require_all_tools: bool = False

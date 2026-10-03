@@ -28,6 +28,7 @@ function getParams(
     paginationSeed: query?._searchSeed, // propagate searchSeed to stabilize random order pagination
     searchSeed: query?._searchSeed, // unused, but pass it along for completeness of data
     search: query?.search,
+    groupVariants: query?.groupVariants,
     cookbook: query?.cookbook,
     households: query?.households,
     categories: query?.categories,

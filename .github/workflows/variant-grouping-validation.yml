@@ -1,0 +1,50 @@
+name: Validate cooking method list grouping
+
+on:
+  push:
+    branches: [cooking-method-variants-validation]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    uses: ./.github/workflows/test-backend.yml
+  generated:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      UV_FROZEN: "1"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+      - uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsasl2-dev libldap2-dev libssl-dev
+          pip install uv
+          npm install --global pnpm@11.23.0 json-schema-to-typescript
+          uv sync --group dev --extra pgsql
+          pnpm --dir frontend install --frozen-lockfile
+      - name: Generate schemas and types
+        run: task dev:generate
+      - name: Capture generated changes
+        if: always()
+        run: |
+          git diff --binary > generated.patch
+          cat generated.patch
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: generated-code
+          path: generated.patch

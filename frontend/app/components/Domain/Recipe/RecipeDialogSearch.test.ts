@@ -160,6 +160,7 @@ describe("RecipeDialogSearch", () => {
 
   test("Enter navigates to the selected recipe", async () => {
     await mountDialog();
+    expect(mocks.useRecipeSearch).toHaveBeenLastCalledWith(expect.anything(), true);
 
     keydown("ArrowDown");
     await nextTick();
@@ -180,6 +181,7 @@ describe("RecipeDialogSearch", () => {
 
   test("Enter emits selected instead of navigating when selected attr is provided", async () => {
     const wrapper = await mountDialog({ selected: vi.fn() });
+    expect(mocks.useRecipeSearch).toHaveBeenLastCalledWith(expect.anything(), false);
 
     keydown("Enter");
 

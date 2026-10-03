@@ -258,11 +258,14 @@ const queryFilter = computed(() => {
   // }
 });
 
+// Browsing lists show each dish once; selectors still request individual methods.
+const groupedQuery = computed(() => ({ ...props.query, groupVariants: true }));
+
 async function fetchRecipes(pageCount = 1) {
   const orderDir = props.query?.orderDirection || preferences.value.orderDirection;
   const orderByNullPosition = props.query?.orderByNullPosition || orderDir === "asc" ? "first" : "last";
   const orderBy = props.query?.orderBy || preferences.value.orderBy;
-  const localQuery = { ...props.query };
+  const localQuery = { ...groupedQuery.value };
   if (orderBy === "random") {
     localQuery._searchSeed = randomSeed.value;
   }
@@ -446,7 +449,7 @@ async function sortRecipes(sortType: string) {
 }
 
 async function navigateRandom() {
-  const recipe = await getRandom(props.query, queryFilter.value);
+  const recipe = await getRandom(groupedQuery.value, queryFilter.value);
   if (!recipe?.slug) {
     return;
   }
