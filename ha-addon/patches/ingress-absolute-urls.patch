@@ -1,0 +1,76 @@
+--- a/frontend/app/plugins/axios.ts
++++ b/frontend/app/plugins/axios.ts
+@@ -45,9 +45,15 @@
+     // Disable beforeunload warnings to prevent "Are you sure you want to leave?" popups
+     window.onbeforeunload = null;
+ 
+-    const target = window.location.pathname + window.location.search;
++    // A full page load, so the Ingress sub path has to be spelled out.
++    // The redirect target must not carry it, or logging back in would
++    // prepend it a second time.
++    const subPath = useRuntimeConfig().public.SUB_PATH || "";
++    const path = window.location.pathname;
++    const relativePath = subPath && path.startsWith(subPath) ? path.slice(subPath.length) || "/" : path;
++    const target = relativePath + window.location.search;
+     const redirect = isSafeRedirectTarget(target) && target !== "/login" ? `?redirect=${encodeURIComponent(target)}` : "";
+-    window.location.href = `/login${redirect}`;
++    window.location.href = `${subPath}/login${redirect}`;
+   }
+ 
+   // Add response interceptor
+--- a/frontend/app/components/Domain/Group/GroupExportData.vue
++++ b/frontend/app/components/Domain/Group/GroupExportData.vue
+@@ -14,7 +14,7 @@
+       <BaseButton
+         download
+         size="small"
+-        :download-url="`/api/recipes/bulk-actions/export/${item.id}/download`"
++        :download-url="`${subPath}/api/recipes/bulk-actions/export/${item.id}/download`"
+       />
+     </template>
+   </v-data-table>
+@@ -30,6 +30,10 @@
+ 
+ const i18n = useI18n();
+ 
++// Followed by the browser as a plain link, so it needs the Ingress sub path
++// baked in rather than added by an interceptor.
++const subPath = useRuntimeConfig().public.SUB_PATH || "";
++
+ const headers = [
+   { title: i18n.t("export.export"), value: "name" },
+   { title: i18n.t("export.file-name"), value: "filename" },
+--- a/frontend/app/components/Domain/Recipe/RecipeDataTable.vue
++++ b/frontend/app/components/Domain/Recipe/RecipeDataTable.vue
+@@ -14,7 +14,7 @@
+   >
+     <template #[`item.name`]="{ item }">
+       <a
+-        :href="`/g/${groupSlug}/r/${item.slug}`"
++        :href="`${subPath}/g/${groupSlug}/r/${item.slug}`"
+         style="color: inherit; text-decoration: inherit; "
+         @click="$emit('click')"
+       >{{ item.name }}</a>
+@@ -71,6 +71,10 @@
+ import type { UserSummary } from "~/lib/api/types/user";
+ import type { RecipeTag } from "~/lib/api/types/household";
+ 
++// A plain anchor rather than a RouterLink, so the Ingress sub path has to be
++// put on by hand; the router never sees it.
++const subPath = useRuntimeConfig().public.SUB_PATH || "";
++
+ interface ShowHeaders {
+   id: boolean;
+   owner: boolean;
+--- a/frontend/app/composables/recipes/use-recipe-ingredients.ts
++++ b/frontend/app/composables/recipes/use-recipe-ingredients.ts
+@@ -45,7 +45,8 @@
+     return undefined;
+   }
+ 
+-  return `<a href="/g/${groupSlug}/r/${recipe.slug}">${recipe.name}</a>`;
++  const subPath = useRuntimeConfig().public.SUB_PATH || "";
++  return `<a href="${subPath}/g/${groupSlug}/r/${recipe.slug}">${recipe.name}</a>`;
+ }
+ 
+ type ParsedIngredientText = {
